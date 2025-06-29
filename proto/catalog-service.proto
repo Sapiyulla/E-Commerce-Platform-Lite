@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package catalogservice;
+
+option go_package = "grpc/gen";
+
+service CatalogService {
+    rpc GetItem (ID) returns (Item);
+}
+
+message ID {
+    string id = 1;
+}
+
+message Item {
+    string id = 1;
+    string name = 2;
+    string category = 3;
+    float price = 4;
+}

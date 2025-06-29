@@ -1,0 +1,16 @@
+services:
+  catalog-db:
+    image: postgres:17-alpine
+    container_name: catalog-db
+    ports:
+      - "5432:5432"
+    networks:
+      - ecomm-net
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: catalog
+
+networks:
+  ecomm-net:
+    driver: bridge
