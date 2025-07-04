@@ -7,7 +7,7 @@
 package gen
 
 import (
-	common "catalog-service/grpc/gen/common"
+	common "order-service/grpc/gen/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"

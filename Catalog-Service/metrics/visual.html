@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.ServiceName}} - Мониторинг</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: white;
+            color: #333;
+        }
+        
+        /* Сайдбар */
+        .sidebar {
+            width: 10%;
+            background-color: whitesmoke;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .logo {
+            text-align: center;
+            padding: 20px;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            letter-spacing: 3px;
+        }
+        
+        /* Основной контент */
+        .main-content {
+            width: 90%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .header h2 {
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            flex: 1;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-card h3 {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 12px 15px;
+            background-color: whitesmoke;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-header h3 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+        
+        .panel-content {
+            padding: 15px;
+        }
+        
+        .request-details {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+        
+        .json-key { color: #d35400; }
+        .json-string { color: #27ae60; }
+        .json-number { color: #2980b9; }
+        .json-boolean { color: #8e44ad; }
+        
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+        
+        .request-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .request-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .request-method {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .method-get { background-color: #27ae60; }
+        .method-post { background-color: #2980b9; }
+        .method-put { background-color: #f39c12; }
+        .method-delete { background-color: #e74c3c; }
+        .method-patch { background-color: #9b59b6; }
+        
+        .timestamp {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            border-top: 1px solid #eee;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .logo {
+                font-size: 1.2rem;
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Сайдбар -->
+    <div class="sidebar">
+        <div class="logo">
+            {{.ServiceName}}
+        </div>
+    </div>
+    
+    <!-- Основной контент -->
+    <div class="main-content">
+        <div class="header">
+            <h2>Мониторинг запросов в реальном времени</h2>
+            <div class="controls">
+                <button class="btn" id="refreshBtn">Обновить</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Всего запросов</h3>
+                <div class="value" id="totalRequests">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Запросов/мин</h3>
+                <div class="value" id="requestsPerMin">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Успешных</h3>
+                <div class="value" id="successRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Среднее время</h3>
+                <div class="value" id="avgDuration">0мс</div>
+            </div>
+        </div>
+        
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Последний запрос</h3>
+                    <span class="timestamp" id="lastRequestTime">-</span>
+                </div>
+                <div class="panel-content">
+                    <div class="request-details" id="lastRequestDetails">
+                        Ожидание данных...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Аналитика запросов</h3>
+                    <select id="timeRange">
+                        <option value="5m">5 минут</option>
+                        <option value="15m">15 минут</option>
+                        <option value="1h">1 час</option>
+                    </select>
+                </div>
+                <div class="panel-content">
+                    <div class="chart-container">
+                        <canvas id="requestsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Статус коды</h3>
+                    <span>Распределение</span>
+                </div>
+                <div class="panel-content">
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Последние запросы</h3>
+                    <span>Топ 10</span>
+                </div>
+                <div class="panel-content">
+                    <div class="request-list" id="recentRequestsList">
+                        <div class="request-item">Нет данных</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            {{.ServiceName}} v{{.Version}} | Система мониторинга | © {{.Year}}
+        </div>
+    </div>
+    
+    <script>
+        // Глобальные переменные для графиков
+        let requestsChart, statusChart;
+        
+        // Инициализация WebSocket
+        function initWebSocket() {
+            const socket = new WebSocket("{{.WSURL}}");
+            
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateDashboard(data);
+            };
+            
+            socket.onopen = function() {
+                console.log("WebSocket подключен");
+            };
+            
+            socket.onerror = function(error) {
+                console.error("WebSocket ошибка:", error);
+            };
+            
+            socket.onclose = function() {
+                console.log("WebSocket соединение закрыто");
+                setTimeout(initWebSocket, 3000);
+            };
+            
+            return socket;
+        }
+        
+        // Инициализация графиков
+        function initCharts() {
+            // График количества запросов
+            const requestsCtx = document.getElementById('requestsChart').getContext('2d');
+            requestsChart = new Chart(requestsCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Запросов/мин',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+            
+            // График статус кодов
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#27ae60', '#f39c12', '#e74c3c', '#8e44ad',
+                            '#1abc9c', '#d35400', '#c0392b', '#7f8c8d'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right' } },
+                    cutout: '65%'
+                }
+            });
+        }
+        
+        // Обновление данных на дашборде
+        function updateDashboard(data) {
+            // Обновление статистики
+            document.getElementById('totalRequests').textContent = data.TotalRequests.toLocaleString();
+            document.getElementById('requestsPerMin').textContent = data.RequestsPerMin;
+            document.getElementById('successRate').textContent = data.SuccessRate + '%';
+            document.getElementById('avgDuration').textContent = data.AvgDuration + 'мс';
+            
+            // Обновление последнего запроса
+            document.getElementById('lastRequestTime').textContent = data.LastRequest.Timestamp;
+            document.getElementById('lastRequestDetails').innerHTML = formatRequestDetails(data.LastRequest);
+            
+            // Обновление графиков
+            requestsChart.data.labels = data.RequestsChart.Labels;
+            requestsChart.data.datasets[0].data = data.RequestsChart.Data;
+            requestsChart.update();
+            
+            statusChart.data.labels = data.StatusChart.Labels;
+            statusChart.data.datasets[0].data = data.StatusChart.Data;
+            statusChart.update();
+            
+            // Обновление списка запросов
+            updateRecentRequests(data.RecentRequests);
+        }
+        
+        // Форматирование деталей запроса
+        function formatRequestDetails(request) {
+            if (!request || Object.keys(request).length === 0) {
+                return '<pre>Нет данных</pre>';
+            }
+            
+            let jsonString = JSON.stringify(request, null, 2);
+            
+            // Простая подсветка синтаксиса
+            jsonString = jsonString
+                .replace(/("[\w]+":)/g, '<span class="json-key">$1</span>')
+                .replace(/("(?:[^"\\]|\\.)*")/g, '<span class="json-string">$1</span>')
+                .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+                .replace(/\b(\d+\.?\d*)\b/g, '<span class="json-number">$1</span>');
+                
+            return `<pre>${jsonString}</pre>`;
+        }
+        
+        // Обновление списка последних запросов
+        function updateRecentRequests(requests) {
+            const container = document.getElementById('recentRequestsList');
+            if (!requests || requests.length === 0) {
+                container.innerHTML = '<div class="request-item">Нет данных</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            requests.forEach(req => {
+                const item = document.createElement('div');
+                item.className = 'request-item';
+                
+                const methodClass = `method-${req.Method.toLowerCase()}`;
+                const timestamp = new Date(req.Timestamp).toLocaleTimeString();
+                
+                item.innerHTML = `
+                    <div>
+                        <span class="request-method ${methodClass}">${req.Method}</span>
+                        <span>${req.Path}</span>
+                    </div>
+                    <span class="timestamp">${timestamp}</span>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            const socket = initWebSocket();
+            
+            // Обработка кнопки обновления
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                socket.send(JSON.stringify({ action: "refresh" }));
+            });
+            
+            // Обработка изменения временного диапазона
+            document.getElementById('timeRange').addEventListener('change', function() {
+                socket.send(JSON.stringify({ 
+                    action: "change_range", 
+                    range: this.value 
+                }));
+            });
+        });
+    </script>
+</body>
+</html>

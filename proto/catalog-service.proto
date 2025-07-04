@@ -4,12 +4,10 @@ package catalogservice;
 
 option go_package = "grpc/gen";
 
-service CatalogService {
-    rpc GetItem (ID) returns (Item);
-}
+import "proto/common/id.proto";
 
-message ID {
-    string id = 1;
+service CatalogService {
+    rpc GetItem (common.ID) returns (Item);
 }
 
 message Item {

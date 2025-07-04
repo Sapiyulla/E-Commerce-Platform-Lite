@@ -26,6 +26,7 @@ func init() {
 		TimestampFormat: "02.01.2006 15:04",
 		FullTimestamp:   true,
 	})
+	gin.SetMode(gin.ReleaseMode)
 }
 
 func main() {
@@ -56,6 +57,7 @@ func main() {
 			}
 		}
 	}()
+	logrus.Infof("database connected")
 
 	//создадим прослушиватель порта для grpc(server)
 	listener, err := net.Listen("tcp", "0.0.0.0:5001")
@@ -81,8 +83,8 @@ func main() {
 		if err := grpcServer.Serve(listener); err != nil {
 			logrus.Errorf("grpc server starting error: %s", err.Error())
 		}
-		logrus.Info("grpc server stoped")
 	}()
+	logrus.Info("starting listen grpc-server on ", listener.Addr())
 
 	// Настройка HTTP-сервера
 	router := gin.Default()
@@ -92,7 +94,7 @@ func main() {
 	router.DELETE("/items/:item_id", httpsrv.DeleteItemHandler)
 
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8443",
 		Handler: router,
 	}
 
@@ -102,10 +104,7 @@ func main() {
 			logrus.Error("HTTP server error:", err)
 		}
 	}()
-
-	go func() {
-
-	}()
+	logrus.Info("starting listen http-server on " + srv.Addr)
 
 	// Ожидание сигналов завершения
 	quit := make(chan os.Signal, 1)

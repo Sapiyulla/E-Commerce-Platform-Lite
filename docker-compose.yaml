@@ -11,6 +11,57 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: catalog
 
+  # Нода 1 (Master + TServer)
+  yb-master:
+    image: yugabytedb/yugabyte:2024.2.3.1-b3
+    container_name: yb-master
+    command: ["bin/yb-master", "--fs_data_dirs=/data/master", "--master_addresses=yb-master:7100"]
+    ports:
+      - "7000:7000"
+      - "7100:7100"
+    volumes:
+      - master_data:/data/master
+
+  yb-tserver1:
+    image: yugabytedb/yugabyte:2024.2.3.1-b3
+    container_name: yb-tserver1
+    depends_on: [yb-master]
+    command: ["bin/yb-tserver", "--fs_data_dirs=/data/tserver1", "--tserver_master_addrs=yb-master:7100", "--start_pgsql_proxy"]
+    ports:
+      - "9001:9000"
+      - "5433:5433"
+    volumes:
+      - tserver1_data:/data/tserver1
+
+  yb-tserver2:
+    image: yugabytedb/yugabyte:2024.2.3.1-b3
+    container_name: yb-tserver2
+    depends_on: [yb-master]
+    command: ["bin/yb-tserver", "--fs_data_dirs=/data/tserver2", "--tserver_master_addrs=yb-master:7100", "--start_pgsql_proxy"]
+    ports:
+      - "9002:9000"
+      - "5434:5433"
+    volumes:
+      - tserver2_data:/data/tserver2
+
+  yb-tserver3:
+    image: yugabytedb/yugabyte:2024.2.3.1-b3
+    container_name: yb-tserver3
+    depends_on: [yb-master]
+    command: ["bin/yb-tserver", "--fs_data_dirs=/data/tserver3", "--tserver_master_addrs=yb-master:7100", "--start_pgsql_proxy"]
+    ports:
+      - "9003:9000"
+      - "5435:5433"
+    volumes:
+      - tserver3_data:/data/tserver3
+
+volumes:
+  tserver3_data:
+  tserver2_data:
+  tserver1_data:
+  master_data:
+
+
 networks:
   ecomm-net:
     driver: bridge

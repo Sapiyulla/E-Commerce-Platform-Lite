@@ -7,8 +7,8 @@
 package gen
 
 import (
-	common "catalog-service/grpc/gen/common"
 	context "context"
+	common "order-service/grpc/gen/common"
 
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
